@@ -1,9 +1,12 @@
+pub mod api_client;
+
 use reqwest::{self, header::{HeaderMap, HeaderValue}};
 use serde::{Deserialize, Serialize};
 use serde::Deserializer;
 use serde_json;
 use thiserror::Error;
 use log::{info, warn};
+
 
 #[derive(Deserialize, Serialize, Debug)]
 #[allow(non_snake_case)]
@@ -92,8 +95,8 @@ pub enum ApiError {
     SerializationError(#[from] serde_json::Error),
     #[error("Invalid API key")]
     InvalidApiKey,
-    #[error("Rate limit exceeded")]
-    RateLimitExceeded,
+    // #[error("Rate limit exceeded")]
+    // RateLimitExceeded,
     #[error("Unknown error")]
     Unknown,
 }

@@ -1,6 +1,9 @@
 use std::env;
 use dotenv::dotenv;
-use monobank_api::{Client};
+
+mod api_client;
+
+use api_client::Client;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
@@ -20,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let from = "1718623708";
     let to = "1720881322";
-    let account = "you_account";
+    let account = "account_id";
     match client.request_payments(account, from, to) {
         Ok(pretty_json) => println!("Payments: {}", pretty_json),
         Err(e) => eprintln!("Error in request_payments: {}", e),
