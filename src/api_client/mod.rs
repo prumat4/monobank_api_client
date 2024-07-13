@@ -1,12 +1,9 @@
-pub mod api_client;
-
 use reqwest::{self, header::{HeaderMap, HeaderValue}};
 use serde::{Deserialize, Serialize};
 use serde::Deserializer;
 use serde_json;
 use thiserror::Error;
 use log::{info, warn};
-
 
 #[derive(Deserialize, Serialize, Debug)]
 #[allow(non_snake_case)]
