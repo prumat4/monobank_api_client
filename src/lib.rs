@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde::Deserializer;
 use serde_json;
 use thiserror::Error;
+use log::{info, warn};
 
 #[derive(Deserialize, Serialize, Debug)]
 #[allow(non_snake_case)]
@@ -91,6 +92,8 @@ pub enum ApiError {
     SerializationError(#[from] serde_json::Error),
     #[error("Invalid API key")]
     InvalidApiKey,
+    #[error("Rate limit exceeded")]
+    RateLimitExceeded,
     #[error("Unknown error")]
     Unknown,
 }
@@ -103,44 +106,70 @@ where
     Ok(cents as f32 / 100.0)
 }
 
-// pub struct MonobankAPIClient {
-// }
-
-fn build_headers(api_key: &str) -> Result<HeaderMap, ApiError> {
-    let mut headers = HeaderMap::new();
-    headers.insert("X-Token", HeaderValue::from_str(api_key).map_err(|_| ApiError::InvalidApiKey)?);
-    Ok(headers)
+pub struct Client {
+    key: String,
+    http_client: reqwest::blocking::Client,
 }
 
-pub fn request_currencies() -> Result<String, ApiError> {
-    let url = "https://api.monobank.ua/bank/currency";
-    let res = reqwest::blocking::get(url)?;
-    let api_response: Vec<Currencies> = res.json()?;
-    let pretty_json = serde_json::to_string_pretty(&api_response)?;
+impl Client {
+    pub fn new(key: &str) -> Self {
+        let http_client = reqwest::blocking::Client::new();
+        Self {
+            key: key.to_string(),
+            http_client,
+        }
+    }
 
-    Ok(pretty_json)
-}
+    fn build_headers(&self) -> Result<HeaderMap, ApiError> {
+        let mut headers = HeaderMap::new();
+        headers.insert("X-Token", HeaderValue::from_str(&self.key).map_err(|_| ApiError::InvalidApiKey)?);
+        Ok(headers)
+    }
 
-pub fn request_user_info(api_key: &str) -> Result<String, ApiError> {
-    let url = "https://api.monobank.ua/personal/client-info";
-    let headers = build_headers(api_key)?;
+    pub fn request_currencies(&self) -> Result<String, ApiError> {
+        let url = "https://api.monobank.ua/bank/currency";
+        info!("Requesting currencies from {}", url);
 
-    let client = reqwest::blocking::Client::new();
-    let res = client.get(url).headers(headers).send()?;
-    let api_response: MonobankClientInfo = res.json()?;
-    let pretty_json = serde_json::to_string_pretty(&api_response)?;
+        let res = self.http_client.get(url).send()?;
+        if res.status().is_success() {
+            let api_response: Vec<Currencies> = res.json()?;
+            let pretty_json = serde_json::to_string_pretty(&api_response)?;
+            Ok(pretty_json)
+        } else {
+            warn!("Failed to request currencies: {}", res.status());
+            Err(ApiError::Unknown)
+        }
+    }
 
-    Ok(pretty_json)
-}
+    pub fn request_user_info(&self) -> Result<String, ApiError> {
+        let url = "https://api.monobank.ua/personal/client-info";
+        info!("Requesting user info from {}", url);
 
-pub fn request_payments(api_key: &str, from: &str, to: &str) -> Result<String, ApiError> {
-    let url = format!("https://api.monobank.ua/personal/statement/{account}/{}/{}", from, to);
-    let headers = build_headers(api_key)?;
+        let headers = self.build_headers()?;
+        let res = self.http_client.get(url).headers(headers).send()?;
+        if res.status().is_success() {
+            let api_response: MonobankClientInfo = res.json()?;
+            let pretty_json = serde_json::to_string_pretty(&api_response)?;
+            Ok(pretty_json)
+        } else {
+            warn!("Failed to request user info: {}", res.status());
+            Err(ApiError::Unknown)
+        }
+    }
 
-    let client = reqwest::blocking::Client::new();
-    let res = client.get(&url).headers(headers).send()?;
-    let api_response: Vec<PaymentsInfo> = res.json()?;
-    let pretty_json = serde_json::to_string_pretty(&api_response)?;
+    pub fn request_payments(&self, account: &str, from: &str, to: &str) -> Result<String, ApiError> {
+        let url = format!("https://api.monobank.ua/personal/statement/{}/{}/{}", account, from, to);
+        info!("Requesting payments from {}", url);
 
-    Ok(pretty_json)
+        let headers = self.build_headers()?;
+        let res = self.http_client.get(&url).headers(headers).send()?;
+        if res.status().is_success() {
+            let api_response: Vec<PaymentsInfo> = res.json()?;
+            let pretty_json = serde_json::to_string_pretty(&api_response)?;
+            Ok(pretty_json)
+        } else {
+            warn!("Failed to request payments: {}", res.status());
+            Err(ApiError::Unknown)
+        }
+    }
 }
