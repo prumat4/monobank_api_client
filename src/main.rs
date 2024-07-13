@@ -15,14 +15,15 @@ struct ApiCurrencyJson {
     rateCross: Option<f32>,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     let api_key = env::var("API_KEY").expect("API_KEY must be set");
     let url = format!("https://api.monobank.ua/bank/currency");
 
-    let res = reqwest::get(&url).await?;
-    let api_response: ApiCurrencyJson = res.json().await?;
+    let res = reqwest::blocking::get(&url)?;
+    let api_response: Vec<ApiCurrencyJson> = res.json()?;
 
     let pretty_json = serde_json::to_string_pretty(&api_response)?;
     println!("API Response: {}", pretty_json);
