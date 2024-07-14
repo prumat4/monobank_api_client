@@ -18,8 +18,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let client_info: MonobankClientInfo = client.request_user_info().unwrap();
-    let accounts = client_info.accounts();
+    let user_info: MonobankClientInfo = client.request_user_info().unwrap();
+    let accounts = user_info.accounts();
     for account in accounts {
         let id = account.id();
         let balance = account.balance();

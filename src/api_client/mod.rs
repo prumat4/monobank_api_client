@@ -10,12 +10,12 @@ use iso_currency::Currency;
 #[derive(Deserialize, Serialize, Debug)]
 #[allow(non_snake_case)]
 pub struct Currencies {
-    currencyCodeA: Option<i32>,
-    currencyCodeB: Option<i32>,
-    date: Option<i64>,
-    rateSell: Option<f64>,
-    rateBuy: Option<f64>,
-    rateCross: Option<f64>,
+    pub currencyCodeA: Option<i32>,
+    pub currencyCodeB: Option<i32>,
+    pub date: Option<i64>,
+    pub rateSell: Option<f64>,
+    pub rateBuy: Option<f64>,
+    pub rateCross: Option<f64>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]

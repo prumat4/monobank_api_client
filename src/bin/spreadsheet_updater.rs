@@ -1,20 +1,100 @@
 use std::env;
 use dotenv::dotenv;
+use std::collections::BTreeSet;
 
-use monobank_api::api_client::{Client, MonobankClientInfo, to_abbreviation};
+use monobank_api::api_client::{Client, MonobankClientInfo, Account, Currencies, to_abbreviation};
+
+fn unique_currencies(accounts: &Vec<Account>) -> BTreeSet<i32> {
+    let mut unique_currencies: BTreeSet<i32> = BTreeSet::<i32>::new();
+
+    for account in accounts {
+        unique_currencies.insert(*account.currency_code());
+    }
+
+    unique_currencies
+}
+
+fn exchange_rates(unique_currencies: &BTreeSet<i32>, currencies_exchange_rates: &Vec<Currencies>) -> Vec<(i32, i32, f32)> {
+    let mut exchange_rates = Vec::<(i32, i32, f32)>::new();
+
+    for (i, &first) in unique_currencies.iter().enumerate() {
+        for &second in unique_currencies.iter().skip(i + 1) {
+            let mut rate_value = -1.0;
+            for currency in currencies_exchange_rates.iter() {
+                if let (Some(currencyCodeA), Some(currencyCodeB), Some(rateBuy)) = (currency.currencyCodeA, currency.currencyCodeB, currency.rateBuy) {
+                    if (first == currencyCodeA && second == currencyCodeB) || (first == currencyCodeB && second == currencyCodeA) {
+                        rate_value = rateBuy as f32;
+                        break;
+                    }
+                }
+            }
+            exchange_rates.push((first, second, rate_value));
+        }
+    }
+
+    exchange_rates
+}
+
+fn total_currency_balance(accounts: &Vec<Account>, currency: &i32) -> f32 {
+    let mut total: f32 = 0.0;
+    for account in accounts {
+        if account.currency_code() == currency {
+            total += account.balance();
+        }
+    }
+
+    total
+}
+
+fn total_of_each_currencies(accounts: &Vec<Account>) -> Vec<(i32, f32)> {
+    let mut total: Vec<(i32, f32)> = Vec::<(i32, f32)>::new();
+    let unique_currencies = unique_currencies(accounts);
+
+    for currency in unique_currencies {
+        total.push((currency, total_currency_balance(accounts, &currency)));
+    }
+
+    dbg!(&total);
+
+    total
+}
+
+fn convert_to_one_currency(total_of_each_currency: &Vec<(i32, f32)>, currencies_exchange_rates: &Vec<Currencies>, currency_to_convert: i32, unique_currencies: &BTreeSet<i32>) -> f32 {
+    let mut total: f32 = 0.0;
+
+    for pair in  total_of_each_currency {
+        if pair.0 == currency_to_convert {
+            total += pair.1;
+        } else {
+            let exchange_rates = exchange_rates(&unique_currencies, &currencies_exchange_rates);
+            total += pair.1 * exchange_rates[(pair., currency_to_convert)];
+        }
+    }
+
+    total 
+}
 
 fn main() {
     dotenv().ok();
     let key: String = env::var("API_KEY").expect("API_KEY must be set");
-
     let client = Client::new(&key);
 
-    let currencies = match client.request_currencies() {
-        Ok(currencies) => {
-            dbg!("Currencies: {}", currencies);
-        }
-        Err(e) => {
-            eprintln!("Error in get_currencies: {}", e);
-        }
-    };
+    let user_info: MonobankClientInfo = client.request_user_info().unwrap();
+    let accounts = user_info.accounts();
+    let mut total_balance: Vec<(f32, i32)> = Vec::<(f32, i32)>::new();
+
+    // for account in accounts {
+    //     let id = account.id();
+    //     let balance = account.balance();
+    //     // let currency = to_abbreviation(*account.currency_code());
+    //     let currency = account.currency_code();
+    //     // total_balance.push((*balance, *currency));
+
+    //     println!("id: {}, balance: {:>10}, currency: {}", id, balance, currency);
+    // }
+    
+    let currencies_exchange_rates = client.request_currencies();
+
+    let _ = total_of_each_currencies(accounts);        
+
 }

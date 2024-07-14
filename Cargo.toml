@@ -13,3 +13,7 @@ dotenv = "0.15"
 thiserror = "1.0.62"
 log = "0.4.22"
 iso_currency = "0.4.4"
+
+[[bin]]
+name = "spreadsheet_updater"
+path = "src/bin/spreadsheet_updater.rs"
