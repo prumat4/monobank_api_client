@@ -11,20 +11,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let client = Client::new(&key);
 
-    match client.request_currencies() {
-        Ok(pretty_json) => println!("Currencies: {}", pretty_json),
-        Err(e) => eprintln!("Error in get_currencies: {}", e),
-    }
+    let currencies = match client.request_currencies() {
+        Ok(currencies) => {
+            dbg!("Currencies: {}", currencies);
+        }
+        Err(e) => {
+            eprintln!("Error in get_currencies: {}", e);
+        }
+    };
 
-    match client.request_user_info() {
-        Ok(pretty_json) => println!("User: {}", pretty_json),
-        Err(e) => eprintln!("Error in request_user_info: {}", e),
-    }
+    let client_info = match client.request_user_info() {
+        Ok(client_info) => {
+            dbg!("User: {}", &client_info);
+        }
+        Err(e) => {
+            eprintln!("Error in request_user_info: {}", e);
+        }
+    };
 
     let from = "1718623708";
     let to = "1720881322";
     let account = "Nc8zgrp8lmgl17YnWmXKCA";
-    match client.request_payments(account, from, to) {
+    
+    let payments = match client.request_payments(account, from, to) {
         Ok(payments) => {
             dbg!("Payments: {}", &payments);
         } 

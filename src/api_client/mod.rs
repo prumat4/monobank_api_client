@@ -126,22 +126,21 @@ impl Client {
         Ok(headers)
     }
 
-    pub fn request_currencies(&self) -> Result<String, ApiError> {
+    pub fn request_currencies(&self) -> Result<Vec<Currencies>, ApiError> {
         let url = "https://api.monobank.ua/bank/currency";
         info!("Requesting currencies from {}", url);
 
         let res = self.http_client.get(url).send()?;
         if res.status().is_success() {
             let api_response: Vec<Currencies> = res.json()?;
-            let pretty_json = serde_json::to_string_pretty(&api_response)?;
-            Ok(pretty_json)
+            Ok(api_response)
         } else {
             warn!("Failed to request currencies: {}", res.status());
             Err(ApiError::Unknown)
         }
     }
 
-    pub fn request_user_info(&self) -> Result<String, ApiError> {
+    pub fn request_user_info(&self) -> Result<MonobankClientInfo, ApiError> {
         let url = "https://api.monobank.ua/personal/client-info";
         info!("Requesting user info from {}", url);
 
@@ -149,8 +148,7 @@ impl Client {
         let res = self.http_client.get(url).headers(headers).send()?;
         if res.status().is_success() {
             let api_response: MonobankClientInfo = res.json()?;
-            let pretty_json = serde_json::to_string_pretty(&api_response)?;
-            Ok(pretty_json)
+            Ok(api_response)
         } else {
             warn!("Failed to request user info: {}", res.status());
             Err(ApiError::Unknown)
