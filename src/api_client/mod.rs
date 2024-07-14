@@ -157,7 +157,7 @@ impl Client {
         }
     }
 
-    pub fn request_payments(&self, account: &str, from: &str, to: &str) -> Result<String, ApiError> {
+    pub fn request_payments(&self, account: &str, from: &str, to: &str) -> Result<Vec<PaymentsInfo>, ApiError> {
         let url = format!("https://api.monobank.ua/personal/statement/{}/{}/{}", account, from, to);
         info!("Requesting payments from {}", url);
 
@@ -165,8 +165,7 @@ impl Client {
         let res = self.http_client.get(&url).headers(headers).send()?;
         if res.status().is_success() {
             let api_response: Vec<PaymentsInfo> = res.json()?;
-            let pretty_json = serde_json::to_string_pretty(&api_response)?;
-            Ok(pretty_json)
+            Ok(api_response)
         } else {
             warn!("Failed to request payments: {}", res.status());
             Err(ApiError::Unknown)

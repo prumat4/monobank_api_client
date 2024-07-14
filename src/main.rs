@@ -23,11 +23,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let from = "1718623708";
     let to = "1720881322";
-    let account = "account_id";
+    let account = "Nc8zgrp8lmgl17YnWmXKCA";
     match client.request_payments(account, from, to) {
-        Ok(pretty_json) => println!("Payments: {}", pretty_json),
-        Err(e) => eprintln!("Error in request_payments: {}", e),
-    }
+        Ok(payments) => {
+            dbg!("Payments: {}", &payments);
+        } 
+        Err(e) => {
+            eprintln!("Error in request_payments: {}", e);
+        }
+    };
 
     Ok(())
 }
