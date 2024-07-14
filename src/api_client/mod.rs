@@ -4,6 +4,8 @@ use serde::Deserializer;
 use serde_json;
 use thiserror::Error;
 use log::{info, warn};
+use iso_currency::Currency;
+
 
 #[derive(Deserialize, Serialize, Debug)]
 #[allow(non_snake_case)]
@@ -32,6 +34,20 @@ pub struct Account {
     iban: String,
 }
 
+impl Account {
+    pub fn id(&self) -> &String {
+        &self.id
+    }
+
+    pub fn balance(&self) -> &f32 {
+        &self.balance
+    }
+
+    pub fn currency_code(&self) -> &i32 {
+        &self.currencyCode
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 #[allow(non_snake_case)]
 pub struct Jar {
@@ -54,6 +70,16 @@ pub struct MonobankClientInfo {
     permissions: String,
     accounts: Vec<Account>,
     jars: Vec<Jar>,
+}
+
+impl MonobankClientInfo {
+    pub fn accounts(&self) -> &Vec<Account> {
+        &self.accounts
+    }
+
+    pub fn jars(&self) -> &Vec<Jar> {
+        &self.jars
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -168,5 +194,12 @@ impl Client {
             warn!("Failed to request payments: {}", res.status());
             Err(ApiError::Unknown)
         }
+    }
+}
+
+pub fn to_abbreviation(code: i32) -> String {
+    match Currency::from_numeric(code.try_into().unwrap()) {
+        Some(currency) => currency.code().to_string(),
+        None => String::from("Unknown"),
     }
 }
