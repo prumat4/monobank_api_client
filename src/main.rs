@@ -1,10 +1,7 @@
 use std::env;
 use dotenv::dotenv;
 
-mod api_client;
-
-use api_client::{Client, MonobankClientInfo};
-use api_client::to_abbreviation;
+use monobank_api::api_client::{Client, MonobankClientInfo, to_abbreviation};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
