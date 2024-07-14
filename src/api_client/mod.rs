@@ -118,8 +118,6 @@ pub enum ApiError {
     SerializationError(#[from] serde_json::Error),
     #[error("Invalid API key")]
     InvalidApiKey,
-    // #[error("Rate limit exceeded")]
-    // RateLimitExceeded,
     #[error("Unknown error")]
     Unknown,
 }
