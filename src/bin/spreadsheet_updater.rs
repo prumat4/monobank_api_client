@@ -14,21 +14,23 @@ fn unique_currencies(accounts: &Vec<Account>) -> BTreeSet<i32> {
     unique_currencies
 }
 
-fn exchange_rates(unique_currencies: &BTreeSet<i32>, currencies_exchange_rates: &Vec<Currencies>) -> Vec<(i32, i32, f32)> {
-    let mut exchange_rates = Vec::<(i32, i32, f32)>::new();
+fn exchange_rates(unique_currencies: &BTreeSet<i32>, currencies_exchange_rates: &Vec<Currencies>) -> Vec<(i32, i32, f32, f32)> {
+    let mut exchange_rates = Vec::<(i32, i32, f32, f32)>::new();
 
     for (i, &first) in unique_currencies.iter().enumerate() {
         for &second in unique_currencies.iter().skip(i + 1) {
-            let mut rate_value = -1.0;
+            let mut rate_buy = -1.0;
+            let mut rate_sell = -1.0;
             for currency in currencies_exchange_rates.iter() {
-                if let (Some(currencyCodeA), Some(currencyCodeB), Some(rateBuy)) = (currency.currencyCodeA, currency.currencyCodeB, currency.rateBuy) {
+                if let (Some(currencyCodeA), Some(currencyCodeB), Some(rateBuy), Some(rateSell)) = (currency.currencyCodeA, currency.currencyCodeB, currency.rateBuy, currency.rateSell) {
                     if (first == currencyCodeA && second == currencyCodeB) || (first == currencyCodeB && second == currencyCodeA) {
-                        rate_value = rateBuy as f32;
+                        rate_buy = rateBuy as f32;
+                        rate_sell = rateSell as f32;
                         break;
                     }
                 }
             }
-            exchange_rates.push((first, second, rate_value));
+            exchange_rates.push((first, second, rate_buy, rate_sell));
         }
     }
 
@@ -75,9 +77,12 @@ fn convert_to_one_currency(
             total += amount;
         } else {
             let mut conversion_rate: Option<f32> = None;
-            for &(from, to, rate) in &exchange_rates_list {
-                if (from == currency && to == currency_to_convert) || (to == currency && from == currency_to_convert) {
-                    conversion_rate = Some(rate);
+            for &(from, to, rate_buy, rate_sell) in &exchange_rates_list {
+                if from == currency && to == currency_to_convert {
+                    conversion_rate = Some(rate_buy);
+                    break;
+                } else if to == currency && from == currency_to_convert {
+                    conversion_rate = Some(1.0 / rate_sell);
                     break;
                 }
             }
@@ -93,7 +98,6 @@ fn convert_to_one_currency(
 }
 
 
-
 fn main() {
     dotenv().ok();
     let key: String = env::var("API_KEY").expect("API_KEY must be set");
@@ -102,11 +106,22 @@ fn main() {
     let user_info: MonobankClientInfo = client.request_user_info().unwrap();
     let accounts = user_info.accounts();
     let mut total_balance: Vec<(f32, i32)> = Vec::<(f32, i32)>::new();
-
     
     let currencies_exchange_rates = client.request_currencies();
 
-    let res = convert_to_one_currency(&accounts, 840, &currencies_exchange_rates.unwrap());        
-    dbg!("res: {}", &res);
-        
+    let total_in_usd = convert_to_one_currency(&accounts, 840, &currencies_exchange_rates.clone().unwrap());        
+    let total_in_uah = convert_to_one_currency(&accounts, 980, &currencies_exchange_rates.unwrap());        
+    
+    println!("total_in_usd: {}", total_in_usd);
+    println!("total_in_uah: {}", total_in_uah);
+
+    let mut a = to_abbreviation(980);
+    println!("980: {}", a);
+
+    a = to_abbreviation(840);
+    println!("840: {}", a);
+
+    a = to_abbreviation(978);
+    println!("978: {}", a);
+
 }
