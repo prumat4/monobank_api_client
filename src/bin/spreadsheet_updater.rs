@@ -59,20 +59,40 @@ fn total_of_each_currencies(accounts: &Vec<Account>) -> Vec<(i32, f32)> {
     total
 }
 
-fn convert_to_one_currency(total_of_each_currency: &Vec<(i32, f32)>, currencies_exchange_rates: &Vec<Currencies>, currency_to_convert: i32, unique_currencies: &BTreeSet<i32>) -> f32 {
+fn convert_to_one_currency(
+    accounts: &Vec<Account>,
+    currency_to_convert: i32,
+    currencies_exchange_rates: &Vec<Currencies>,
+) -> f32 {
+    let unique_currencies = unique_currencies(accounts);
+    let total_of_each_currency = total_of_each_currencies(accounts);
+    let exchange_rates_list = exchange_rates(&unique_currencies, currencies_exchange_rates);
+
     let mut total: f32 = 0.0;
 
-    for pair in  total_of_each_currency {
-        if pair.0 == currency_to_convert {
-            total += pair.1;
+    for &(currency, amount) in &total_of_each_currency {
+        if currency == currency_to_convert {
+            total += amount;
         } else {
-            let exchange_rates = exchange_rates(&unique_currencies, &currencies_exchange_rates);
-            total += pair.1 * exchange_rates[(pair., currency_to_convert)];
+            let mut conversion_rate: Option<f32> = None;
+            for &(from, to, rate) in &exchange_rates_list {
+                if (from == currency && to == currency_to_convert) || (to == currency && from == currency_to_convert) {
+                    conversion_rate = Some(rate);
+                    break;
+                }
+            }
+            if let Some(rate) = conversion_rate {
+                total += amount * rate;
+            } else {
+                eprintln!("No conversion rate found for currency pair ({}, {})", currency, currency_to_convert);
+            }
         }
     }
 
-    total 
+    total
 }
+
+
 
 fn main() {
     dotenv().ok();
@@ -83,18 +103,10 @@ fn main() {
     let accounts = user_info.accounts();
     let mut total_balance: Vec<(f32, i32)> = Vec::<(f32, i32)>::new();
 
-    // for account in accounts {
-    //     let id = account.id();
-    //     let balance = account.balance();
-    //     // let currency = to_abbreviation(*account.currency_code());
-    //     let currency = account.currency_code();
-    //     // total_balance.push((*balance, *currency));
-
-    //     println!("id: {}, balance: {:>10}, currency: {}", id, balance, currency);
-    // }
     
     let currencies_exchange_rates = client.request_currencies();
 
-    let _ = total_of_each_currencies(accounts);        
-
+    let res = convert_to_one_currency(&accounts, 980, &currencies_exchange_rates.unwrap());        
+    dbg!("res: {}", &res);
+        
 }
