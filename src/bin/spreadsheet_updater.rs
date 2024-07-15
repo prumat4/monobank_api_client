@@ -4,8 +4,8 @@ use std::collections::BTreeSet;
 
 use monobank_api::api_client::{Client, MonobankClientInfo, Account, Currencies, to_abbreviation};
 
-fn unique_currencies(accounts: &Vec<Account>) -> BTreeSet<i32> {
-    let mut unique_currencies: BTreeSet<i32> = BTreeSet::<i32>::new();
+fn get_unique_currencies(accounts: &Vec<Account>) -> BTreeSet<i32> {
+    let mut unique_currencies: BTreeSet<i32> = BTreeSet::new();
 
     for account in accounts {
         unique_currencies.insert(*account.currency_code());
@@ -14,8 +14,8 @@ fn unique_currencies(accounts: &Vec<Account>) -> BTreeSet<i32> {
     unique_currencies
 }
 
-fn exchange_rates(unique_currencies: &BTreeSet<i32>, currencies_exchange_rates: &Vec<Currencies>) -> Vec<(i32, i32, f32, f32)> {
-    let mut exchange_rates = Vec::<(i32, i32, f32, f32)>::new();
+fn get_exchange_rates(unique_currencies: &BTreeSet<i32>, currencies_exchange_rates: &Vec<Currencies>) -> Vec<(i32, i32, f32, f32)> {
+    let mut exchange_rates = Vec::new();
 
     for (i, &first) in unique_currencies.iter().enumerate() {
         for &second in unique_currencies.iter().skip(i + 1) {
@@ -37,7 +37,7 @@ fn exchange_rates(unique_currencies: &BTreeSet<i32>, currencies_exchange_rates: 
     exchange_rates
 }
 
-fn total_currency_balance(accounts: &Vec<Account>, currency: &i32) -> f32 {
+fn get_total_balance_by_currency(accounts: &Vec<Account>, currency: &i32) -> f32 {
     let mut total: f32 = 0.0;
     for account in accounts {
         if account.currency_code() == currency {
@@ -48,40 +48,38 @@ fn total_currency_balance(accounts: &Vec<Account>, currency: &i32) -> f32 {
     total
 }
 
-fn total_of_each_currencies(accounts: &Vec<Account>) -> Vec<(i32, f32)> {
-    let mut total: Vec<(i32, f32)> = Vec::<(i32, f32)>::new();
-    let unique_currencies = unique_currencies(accounts);
+fn get_total_balances(accounts: &Vec<Account>) -> Vec<(i32, f32)> {
+    let mut total_balances = Vec::new();
+    let unique_currencies = get_unique_currencies(accounts);
 
     for currency in unique_currencies {
-        total.push((currency, total_currency_balance(accounts, &currency)));
+        total_balances.push((currency, get_total_balance_by_currency(accounts, &currency)));
     }
 
-    dbg!(&total);
-
-    total
+    total_balances
 }
 
-fn convert_to_one_currency(
+fn convert_balances_to_currency(
     accounts: &Vec<Account>,
-    currency_to_convert: i32,
+    target_currency: i32,
     currencies_exchange_rates: &Vec<Currencies>,
 ) -> f32 {
-    let unique_currencies = unique_currencies(accounts);
-    let total_of_each_currency = total_of_each_currencies(accounts);
-    let exchange_rates_list = exchange_rates(&unique_currencies, currencies_exchange_rates);
+    let unique_currencies = get_unique_currencies(accounts);
+    let total_balances = get_total_balances(accounts);
+    let exchange_rates_list = get_exchange_rates(&unique_currencies, currencies_exchange_rates);
 
     let mut total: f32 = 0.0;
 
-    for &(currency, amount) in &total_of_each_currency {
-        if currency == currency_to_convert {
+    for &(currency, amount) in &total_balances {
+        if currency == target_currency {
             total += amount;
         } else {
             let mut conversion_rate: Option<f32> = None;
             for &(from, to, rate_buy, rate_sell) in &exchange_rates_list {
-                if from == currency && to == currency_to_convert {
+                if from == currency && to == target_currency {
                     conversion_rate = Some(rate_buy);
                     break;
-                } else if to == currency && from == currency_to_convert {
+                } else if to == currency && from == target_currency {
                     conversion_rate = Some(1.0 / rate_sell);
                     break;
                 }
@@ -89,7 +87,7 @@ fn convert_to_one_currency(
             if let Some(rate) = conversion_rate {
                 total += amount * rate;
             } else {
-                eprintln!("No conversion rate found for currency pair ({}, {})", currency, currency_to_convert);
+                eprintln!("No conversion rate found for currency pair ({}, {})", currency, target_currency);
             }
         }
     }
@@ -97,10 +95,9 @@ fn convert_to_one_currency(
     total
 }
 
-
 fn main() {
     dotenv().ok();
-    let key: String = match env::var("API_KEY") {
+    let api_key: String = match env::var("API_KEY") {
         Ok(key) => key,
         Err(_) => {
             eprintln!("API_KEY must be set");
@@ -108,7 +105,7 @@ fn main() {
         },
     };
 
-    let client = Client::new(&key);
+    let client = Client::new(&api_key);
 
     let user_info: MonobankClientInfo = match client.request_user_info() {
         Ok(info) => info,
@@ -118,7 +115,7 @@ fn main() {
         },
     };
     let accounts = user_info.accounts();
-    let mut total_balance: Vec<(f32, i32)> = Vec::<(f32, i32)>::new();
+    let mut total_balances: Vec<(f32, i32)> = Vec::new();
     
     let currencies_exchange_rates = match client.request_currencies() {
         Ok(rates) => rates,
@@ -128,10 +125,9 @@ fn main() {
         },
     };
 
-    let total_in_usd = convert_to_one_currency(&accounts, 840, &currencies_exchange_rates);        
-    let total_in_uah = convert_to_one_currency(&accounts, 980, &currencies_exchange_rates);        
+    let total_in_usd = convert_balances_to_currency(&accounts, 840, &currencies_exchange_rates);        
+    let total_in_uah = convert_balances_to_currency(&accounts, 980, &currencies_exchange_rates);        
 
-    println!("total_in_usd: {}", total_in_usd);
-    println!("total_in_uah: {}", total_in_uah);
-
+    println!("Total in USD: {}", total_in_usd);
+    println!("Total in UAH: {}", total_in_uah);
 }
