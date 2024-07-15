@@ -145,12 +145,24 @@ fn main() {
     let unique_currencies = get_unique_currencies(&accounts);
     let exchange_rates = get_exchange_rates(&unique_currencies, &currencies_exchange_rates);
 
+    let mut uah_usd_buy = 0.0;
+    let mut uah_usd_sell = 0.0;
+    let mut uah_eur_buy = 0.0;
+    let mut uah_eur_sell = 0.0;
+
     for &(from, to, rate_buy, rate_sell) in &exchange_rates {
         if (from == uah && to == usd) || (from == usd && to == uah) {
-            println!("Exchange rate (UAH to USD): Buy = {}, Sell = {}", rate_buy, rate_sell);
+            uah_usd_buy = rate_buy;
+            uah_usd_sell = rate_sell;
+
         }
         if (from == uah && to == eur) || (from == eur && to == uah) {
-            println!("Exchange rate (UAH to EUR): Buy = {}, Sell = {}", rate_buy, rate_sell);
+            uah_eur_buy = rate_buy;
+            uah_eur_sell = rate_sell;
         }
     }
+
+    println!("Exchange rate (UAH to USD): Buy = {}, Sell = {}", uah_usd_buy, uah_usd_sell);
+    println!("Exchange rate (UAH to EUR): Buy = {}, Sell = {}", uah_eur_buy, uah_eur_sell);
+
 }
