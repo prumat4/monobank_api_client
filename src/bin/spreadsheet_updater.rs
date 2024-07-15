@@ -100,28 +100,38 @@ fn convert_to_one_currency(
 
 fn main() {
     dotenv().ok();
-    let key: String = env::var("API_KEY").expect("API_KEY must be set");
+    let key: String = match env::var("API_KEY") {
+        Ok(key) => key,
+        Err(_) => {
+            eprintln!("API_KEY must be set");
+            return;
+        },
+    };
+
     let client = Client::new(&key);
 
-    let user_info: MonobankClientInfo = client.request_user_info().unwrap();
+    let user_info: MonobankClientInfo = match client.request_user_info() {
+        Ok(info) => info,
+        Err(e) => {
+            eprintln!("Failed to request user info: {:?}", e);
+            return;
+        },
+    };
     let accounts = user_info.accounts();
     let mut total_balance: Vec<(f32, i32)> = Vec::<(f32, i32)>::new();
     
-    let currencies_exchange_rates = client.request_currencies();
+    let currencies_exchange_rates = match client.request_currencies() {
+        Ok(rates) => rates,
+        Err(e) => {
+            eprintln!("Failed to request currencies: {:?}", e);
+            return;
+        },
+    };
 
-    let total_in_usd = convert_to_one_currency(&accounts, 840, &currencies_exchange_rates.clone().unwrap());        
-    let total_in_uah = convert_to_one_currency(&accounts, 980, &currencies_exchange_rates.unwrap());        
-    
+    let total_in_usd = convert_to_one_currency(&accounts, 840, &currencies_exchange_rates);        
+    let total_in_uah = convert_to_one_currency(&accounts, 980, &currencies_exchange_rates);        
+
     println!("total_in_usd: {}", total_in_usd);
     println!("total_in_uah: {}", total_in_uah);
-
-    let mut a = to_abbreviation(980);
-    println!("980: {}", a);
-
-    a = to_abbreviation(840);
-    println!("840: {}", a);
-
-    a = to_abbreviation(978);
-    println!("978: {}", a);
 
 }
