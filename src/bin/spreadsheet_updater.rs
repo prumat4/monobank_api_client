@@ -106,7 +106,7 @@ fn main() {
     
     let currencies_exchange_rates = client.request_currencies();
 
-    let res = convert_to_one_currency(&accounts, 980, &currencies_exchange_rates.unwrap());        
+    let res = convert_to_one_currency(&accounts, 840, &currencies_exchange_rates.unwrap());        
     dbg!("res: {}", &res);
         
 }
