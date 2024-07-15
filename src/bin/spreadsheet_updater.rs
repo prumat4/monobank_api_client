@@ -97,6 +97,10 @@ fn convert_balances_to_currency(
 
 fn main() {
     dotenv().ok();
+    let uah = 980;
+    let usd = 840;
+    let eur = 978;
+
     let api_key: String = match env::var("API_KEY") {
         Ok(key) => key,
         Err(_) => {
@@ -115,7 +119,6 @@ fn main() {
         },
     };
     let accounts = user_info.accounts();
-    let mut total_balances: Vec<(f32, i32)> = Vec::new();
     
     let currencies_exchange_rates = match client.request_currencies() {
         Ok(rates) => rates,
@@ -125,9 +128,29 @@ fn main() {
         },
     };
 
-    let total_in_usd = convert_balances_to_currency(&accounts, 840, &currencies_exchange_rates);        
-    let total_in_uah = convert_balances_to_currency(&accounts, 980, &currencies_exchange_rates);        
+    let total_uah = get_total_balance_by_currency(&accounts, &uah);
+    let total_usd = get_total_balance_by_currency(&accounts, &usd);
+    let total_eur = get_total_balance_by_currency(&accounts, &eur);
 
-    println!("Total in USD: {}", total_in_usd);
-    println!("Total in UAH: {}", total_in_uah);
+    println!("Total UAH: {}", total_uah);
+    println!("Total USD: {}", total_usd);
+    println!("Total EUR: {}", total_eur);
+
+    let converted_to_usd = convert_balances_to_currency(&accounts, usd, &currencies_exchange_rates);        
+    let converted_to_uah = convert_balances_to_currency(&accounts, uah, &currencies_exchange_rates);        
+
+    println!("Total in USD: {}", converted_to_usd);
+    println!("Total in UAH: {}", converted_to_uah);
+
+    let unique_currencies = get_unique_currencies(&accounts);
+    let exchange_rates = get_exchange_rates(&unique_currencies, &currencies_exchange_rates);
+
+    for &(from, to, rate_buy, rate_sell) in &exchange_rates {
+        if (from == uah && to == usd) || (from == usd && to == uah) {
+            println!("Exchange rate (UAH to USD): Buy = {}, Sell = {}", rate_buy, rate_sell);
+        }
+        if (from == uah && to == eur) || (from == eur && to == uah) {
+            println!("Exchange rate (UAH to EUR): Buy = {}, Sell = {}", rate_buy, rate_sell);
+        }
+    }
 }
