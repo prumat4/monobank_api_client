@@ -14,7 +14,7 @@ There are 3 available requests:
 
 ### Integration Example
 
-Once you receive the data from these requests, you can integrate it into your workflow, see src/example.rs for reference.
+Once you receive the data from these requests, you can integrate it into your workflow, see `src/bin/example.rs` for reference.
 
 ### Setup
 
