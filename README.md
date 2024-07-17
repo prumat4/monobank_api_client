@@ -14,7 +14,7 @@ There are 3 available requests:
 
 ### Integration Example
 
-Once you receive the data from these requests, you can integrate it into your workflow. For example, I use it to automatically update a Google Spreadsheet where I track my finances.
+Once you receive the data from these requests, you can integrate it into your workflow, see src/example.rs for reference.
 
 ### Setup
 
