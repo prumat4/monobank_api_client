@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let client = Client::new(&key);
 
-    let currencies = match client.request_currencies() {
+    let _currencies = match client.request_currencies() {
         Ok(currencies) => {
             dbg!("Currencies: {}", currencies);
         }
@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let to = "1720881322";
     let account = "account";
     
-    let payments = match client.request_payments(account, from, to) {
+    let _payments = match client.request_payments(account, from, to) {
         Ok(payments) => {
             dbg!("Payments: {}", &payments);
         } 
